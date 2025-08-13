@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Button from "./Button";
 import Navbar from "./Navbar";
+import Filter from "./Filter";
 
 export default function CardList() {
   const [orders, setOrders] = useState([]);
@@ -8,12 +9,19 @@ export default function CardList() {
   const [filters, setFilters] = useState({ origin_code: [], destination_code: [] });
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
   const itemsPerPage = 6;
 
-  const fetchOrders = async (
-    customFilters = filters,
-    customKeyword = keyword
-  ) => {
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const fetchOrders = async (customFilters = filters, customKeyword = keyword, page = currentPage) => {
     try {
       setLoading(true);
       const res = await fetch(
@@ -28,14 +36,15 @@ export default function CardList() {
               origin_code: customFilters.origin_code,
               destination_code: customFilters.destination_code,
             },
-            page: 1, // ambil semua dulu, pagination di client
+            page: page,
+            limit: itemsPerPage, // backend batasi 6 item per halaman
           }),
         }
       );
 
       const data = await res.json();
       setOrders(data.order_list || []);
-      setCurrentPage(1); // reset ke halaman pertama setiap ada pencarian/filter
+      setTotalPages(data.total_pages || 1); // API harus kirim total_pages
     } catch (err) {
       console.error(err);
     } finally {
@@ -43,57 +52,75 @@ export default function CardList() {
     }
   };
 
-  // Data yang akan ditampilkan sesuai pagination
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentOrders = orders.slice(startIndex, startIndex + itemsPerPage);
-  const totalPages = Math.ceil(orders.length / itemsPerPage);
-
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(filters, keyword, currentPage);
+  }, [currentPage]);
 
   return (
     <div>
       <Navbar
-        onApplyFilter={(f) => {
-          setFilters(f);
-          fetchOrders(f, keyword);
-        }}
         onSearch={(kw) => {
           setKeyword(kw);
-          fetchOrders(filters, kw);
+          setCurrentPage(1);
+          fetchOrders(filters, kw, 1);
         }}
+        onOpenFilter={() => setIsFilterOpen(true)}
       />
+
+      {/* Filter */}
+      {isDesktop ? (
+        isFilterOpen && (
+          <div className="absolute right-5 mt-2 z-50">
+            <Filter
+              isOpen={true}
+              mode="popover"
+              initialFilter={filters}
+              onClose={() => setIsFilterOpen(false)}
+              onApply={(f) => {
+                setFilters(f);
+                setCurrentPage(1);
+                fetchOrders(f, keyword, 1);
+                setIsFilterOpen(false);
+              }}
+            />
+          </div>
+        )
+      ) : (
+        <Filter
+          isOpen={isFilterOpen}
+          mode="sidebar"
+          initialFilter={filters}
+          onClose={() => setIsFilterOpen(false)}
+          onApply={(f) => {
+            setFilters(f);
+            setCurrentPage(1);
+            fetchOrders(f, keyword, 1);
+            setIsFilterOpen(false);
+          }}
+        />
+      )}
 
       {loading ? (
         <p className="text-center mt-5">Loading...</p>
       ) : (
         <>
-          <div className="grid gap-4 xl:gap-10 xs:grid-cols-2 lg:grid-cols-3 p-4 xl:p-10">
-            {currentOrders.length > 0 ? (
-              currentOrders.map((order) => (
+          <div className="grid gap-4 xs:grid-cols-2 lg:grid-cols-3 p-4">
+            {orders.length > 0 ? (
+              orders.map((order) => (
                 <div key={order.do_id} className="bg-white rounded-lg p-2 lg:p-5 w-full">
                   <span className="flex flex-col border border-black p-2 lg:p-3 rounded-xl">
                     <p className="text-xs md:text-base">Order ID</p>
                     <h3 className="text-sm md:text-xl font-bold">{order.do_id}</h3>
                   </span>
                   <div className="flex flex-col justify-center items-center mt-2 lg:mt-5 gap-2 lg:gap-5">
-                    <h3 className="bg-green-100 w-full text-center p-2 rounded-lg lg:text-lg">
+                    <h3 className="bg-green-100 w-full text-center p-2 rounded-lg">
                       {order.goods_name}
                     </h3>
                     <span className="flex flex-col md:flex-row items-center gap-1 lg:gap-5 text-sm lg:text-lg font-semibold lg:font-bold">
-                      <div className="flex-col text-center">
-                        <p className="font-light text-xs">Origin</p>
-                        <h2>{order.origin_name}</h2>
-                      </div>
-                      {/* Mobile */}
+                      <h2>{order.origin_name}</h2>
                       <i className="fa-solid fa-arrow-down block md:hidden"></i>
-                      {/* Desktop */}
                       <i className="fa-solid fa-arrow-right hidden md:block"></i>
-                      <div className="flex-col text-center">
-                        <p className="font-light text-xs">Destination</p>
-                        <h2>{order.destination_name}</h2>
-                      </div>
+                      <h2>{order.destination_name}</h2>
                     </span>
                     <Button text={"Lihat Detail"} />
                   </div>
@@ -111,8 +138,7 @@ export default function CardList() {
                 className="fa-solid fa-caret-left fa-2xl px-3 py-1 border rounded disabled:opacity-50"
                 onClick={() => setCurrentPage((prev) => prev - 1)}
                 disabled={currentPage === 1}
-              >
-              </button>
+              />
               {[...Array(totalPages)].map((_, index) => (
                 <button
                   key={index}
@@ -128,8 +154,7 @@ export default function CardList() {
                 className="fa-solid fa-caret-right fa-2xl px-3 py-1 border rounded disabled:opacity-50"
                 onClick={() => setCurrentPage((prev) => prev + 1)}
                 disabled={currentPage === totalPages}
-              >
-              </button>
+              />
             </div>
           )}
         </>
