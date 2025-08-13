@@ -82,12 +82,18 @@ export default function CardList() {
                       {order.goods_name}
                     </h3>
                     <span className="flex flex-col md:flex-row items-center gap-1 lg:gap-5 text-sm lg:text-lg font-semibold lg:font-bold">
-                      <h2>{order.origin_name}</h2>
+                      <div className="flex-col text-center">
+                        <p className="font-light text-xs">Origin</p>
+                        <h2>{order.origin_name}</h2>
+                      </div>
                       {/* Mobile */}
                       <i className="fa-solid fa-arrow-down block md:hidden"></i>
                       {/* Desktop */}
                       <i className="fa-solid fa-arrow-right hidden md:block"></i>
-                      <h2>{order.destination_name}</h2>
+                      <div className="flex-col text-center">
+                        <p className="font-light text-xs">Destination</p>
+                        <h2>{order.destination_name}</h2>
+                      </div>
                     </span>
                     <Button text={"Lihat Detail"} />
                   </div>
