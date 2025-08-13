@@ -78,7 +78,7 @@ export default function CardList() {
                     <h3 className="text-sm md:text-xl font-bold">{order.do_id}</h3>
                   </span>
                   <div className="flex flex-col justify-center items-center mt-2 lg:mt-5 gap-2 lg:gap-5">
-                    <h3 className="bg-green-100 w-full text-center p-2 rounded-lg">
+                    <h3 className="bg-green-100 w-full text-center p-2 rounded-lg lg:text-lg">
                       {order.goods_name}
                     </h3>
                     <span className="flex flex-col md:flex-row items-center gap-1 lg:gap-5 text-sm lg:text-lg font-semibold lg:font-bold">
