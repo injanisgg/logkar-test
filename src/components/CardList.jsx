@@ -96,26 +96,22 @@ export default function CardList() {
     }
   };
 
-  // Generate pagination numbers with ellipsis for better UX
+  // buat nomor pagination
   const generatePaginationNumbers = () => {
-    const delta = 2; // Show 2 pages before and after current page
+    const delta = 2; // tampilkan 2 page sebelum dan sesudah
     const range = [];
     const rangeWithDots = [];
 
-    // Always include first page
     range.push(1);
 
-    // Add pages around current page
     for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
       range.push(i);
     }
 
-    // Always include last page if there's more than 1 page
     if (totalPages > 1) {
       range.push(totalPages);
     }
 
-    // Add dots where needed
     let prev = 0;
     for (const page of range) {
       if (page - prev === 2) {
